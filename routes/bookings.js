@@ -4,6 +4,7 @@ const auth = require('../middleware/auth');
 const Booking = require('../models/Booking');
 const Class = require('../models/Class');
 const admin = require('../middleware/admin');
+const User = require('../models/User');
 
 // Helper function to calculate minutes between two times
 function calculateMinutesBetweenTimes(startTime, endTime) {
@@ -87,6 +88,12 @@ router.post('/', auth, async (req, res) => {
 
         // Save the booking
         await newBooking.save();
+
+        // remove the mintes spent from the user's remaining minutes
+        await User.findByIdAndUpdate(
+            userId,
+            { $inc: { remainingMinutes: -totalMinutes } }
+        );
 
         // Add user to class attendees
         await Class.findByIdAndUpdate(

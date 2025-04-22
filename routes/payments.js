@@ -133,6 +133,40 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
     res.json({received: true});
 });
 
+
+// create a route that uses auth middleware and take the package detailes /payment-success
+router.post('/payment-success', auth, async (req, res) => {
+    try {
+        const {  payment_intent_id } = req.body;
+        
+        const paymentIntent = await stripe.paymentIntents.retrieve( payment_intent_id);
+
+        if (paymentIntent.status === 'succeeded') {
+            const package = await Package.findOne({
+                stripePaymentIntentId:  payment_intent_id
+            });
+
+            if (package) {
+                package.status = 'paid';
+                await package.save();
+                
+            }
+
+            await User.findByIdAndUpdate(
+                package.userId,
+                { $inc: { remainingMinutes: package.hours * 60 } }
+            );
+
+            res.json({ success: true, message: 'Payment successful' });
+        } else {
+            res.status(400).json({ error: 'Payment failed' });
+        }
+    } catch (error) {
+        console.error('Error processing payment success:', error);
+        res.status(500).json({ error: 'Payment success processing failed' });
+    }
+});
+
 // Get user's package purchase history
 router.get('/history', auth, async (req, res) => {
     try {
