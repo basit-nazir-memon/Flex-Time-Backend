@@ -61,7 +61,14 @@ function calculateHoursBetween(startTime, endTime) {
     const [startHour, startMinute] = startTime.split(':').map(Number);
     const [endHour, endMinute] = endTime.split(':').map(Number);
     
-    return ((endHour * 60 + endMinute) - (startHour * 60 + startMinute)) / 60;
+    let totalMinutes = (endHour * 60 + endMinute) - (startHour * 60 + startMinute);
+    
+    // Handle case where end time is on the next day
+    if (totalMinutes < 0) {
+        totalMinutes += 24 * 60; // Add 24 hours worth of minutes
+    }
+    
+    return totalMinutes / 60;
 }
 
 router.get('/user', auth, async (req, res) => {
@@ -239,7 +246,8 @@ router.get('/trainer', auth, async (req, res) => {
         }).lean();
 
         const hoursTaughtThisMonth = monthClasses.reduce((total, cls) => {
-            return total + calculateHoursBetween(cls.startTime, cls.endTime);
+            const hours = calculateHoursBetween(cls.startTime, cls.endTime);
+            return total + (hours > 0 ? hours : 0); // Ensure we don't add negative hours
         }, 0);
 
         // Get upcoming classes for next 7 days
@@ -295,6 +303,81 @@ router.get('/trainer', auth, async (req, res) => {
 
     } catch (error) {
         console.error('Error fetching trainer dashboard data:', error);
+        res.status(500).json({ 
+            error: 'Server error',
+            details: error.message 
+        });
+    }
+});
+
+router.get('/admin', auth, async (req, res) => {
+    try {
+        // Get total counts
+        const totalUsers = await User.countDocuments();
+        const totalTrainers = await Trainer.countDocuments();
+        const totalClasses = await Class.countDocuments();
+        const totalBookings = await Booking.countDocuments();
+
+        // Get upcoming classes (next 7 days)
+        const now = new Date();
+        const nextWeek = new Date(now);
+        nextWeek.setDate(nextWeek.getDate() + 7);
+
+        const upcomingClasses = await Class.find({
+            date: { $gte: now, $lte: nextWeek }
+        })
+        .populate('trainerId', 'userId')
+        .populate({
+            path: 'trainerId',
+            populate: {
+                path: 'userId',
+                select: 'name'
+            }
+        })
+        .sort({ date: 1, startTime: 1 })
+        .lean();
+
+        // Format upcoming classes
+        const formattedUpcomingClasses = upcomingClasses.map(cls => ({
+            id: cls._id.toString(),
+            title: cls.title,
+            date: cls.date.toISOString().split('T')[0],
+            startTime: cls.startTime,
+            endTime: cls.endTime,
+            location: cls.location,
+            trainer: cls.trainerId.userId.name,
+            enrolledUsers: cls.attendees.length,
+            maxCapacity: cls.maxCapacity
+        }));
+
+        // Get recent bookings
+        const recentBookings = await Booking.find()
+            .sort({ createdAt: -1 })
+            .limit(10)
+            .populate('userId', 'name')
+            .populate('classId', 'title date')
+            .lean();
+
+        // Format recent bookings
+        const formattedRecentBookings = recentBookings.map(booking => ({
+            id: booking._id.toString(),
+            className: booking.classId.title,
+            userName: booking.userId.name,
+            date: booking.classId.date.toISOString().split('T')[0],
+            status: booking.cancelled ? 'cancelled' : 'confirmed'
+        }));
+
+        res.json({
+            totalUsers,
+            totalTrainers,
+            totalClasses,
+            totalBookings,
+            upcomingClasses: formattedUpcomingClasses,
+            recentBookings: formattedRecentBookings
+        });
+
+    } catch (error) {
+        console.error('Error fetching admin dashboard data:', error);
         res.status(500).json({ 
             error: 'Server error',
             details: error.message 
