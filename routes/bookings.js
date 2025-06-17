@@ -6,6 +6,116 @@ const Class = require('../models/Class');
 const admin = require('../middleware/admin');
 const User = require('../models/User');
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     Booking:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         className:
+ *           type: string
+ *         trainer:
+ *           type: string
+ *         date:
+ *           type: string
+ *           format: date
+ *         startTime:
+ *           type: string
+ *         endTime:
+ *           type: string
+ *         location:
+ *           type: string
+ *         status:
+ *           type: string
+ *           enum: [upcoming, completed, cancelled]
+ *         type:
+ *           type: string
+ *     BookingResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *         booking:
+ *           type: object
+ *           properties:
+ *             id:
+ *               type: string
+ *             user:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                 email:
+ *                   type: string
+ *             class:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 title:
+ *                   type: string
+ *                 date:
+ *                   type: string
+ *                   format: date
+ *                 startTime:
+ *                   type: string
+ *                 endTime:
+ *                   type: string
+ *                 isRecurringClass:
+ *                   type: boolean
+ *                 frequency:
+ *                   type: string
+ *                 endDate:
+ *                   type: string
+ *                   format: date
+ *             minutesSpent:
+ *               type: number
+ *             bookedAt:
+ *               type: string
+ *               format: date-time
+ */
+
+/**
+ * @swagger
+ * /api/bookings:
+ *   post:
+ *     summary: Create a new booking
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - classId
+ *             properties:
+ *               classId:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Booking created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/BookingResponse'
+ *       400:
+ *         description: Invalid input or class is full
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Class not found
+ *       500:
+ *         description: Server error
+ */
+
 // Helper function to calculate minutes between two times
 function calculateMinutesBetweenTimes(startTime, endTime) {
     const [startHour, startMinute] = startTime.split(':').map(Number);
@@ -146,6 +256,29 @@ router.post('/', auth, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/bookings:
+ *   get:
+ *     summary: Get user's bookings
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of user's bookings
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Booking'
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+
 // Get user's bookings
 router.get('/', auth, async (req, res) => {
     try {
@@ -224,6 +357,47 @@ router.get('/', auth, async (req, res) => {
         });
     }
 });
+
+/**
+ * @swagger
+ * /api/bookings/upcoming:
+ *   get:
+ *     summary: Get upcoming bookings
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of upcoming bookings
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   className:
+ *                     type: string
+ *                   trainer:
+ *                     type: string
+ *                   date:
+ *                     type: string
+ *                     format: date
+ *                   startTime:
+ *                     type: string
+ *                   endTime:
+ *                     type: string
+ *                   location:
+ *                     type: string
+ *                   type:
+ *                     type: string
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
 
 // Get user's bookings
 router.get('/upcoming', auth, async (req, res) => {
@@ -310,6 +484,90 @@ router.get('/upcoming', auth, async (req, res) => {
         });
     }
 });
+
+/**
+ * @swagger
+ * /api/bookings/admin:
+ *   get:
+ *     summary: Get all bookings (admin only)
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term for class name, trainer, or user
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [confirmed, completed, cancelled]
+ *         description: Filter by booking status
+ *       - in: query
+ *         name: type
+ *         schema:
+ *           type: string
+ *         description: Filter by class type
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter by date
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           enum: [date, className, trainer, user]
+ *         description: Field to sort by
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *         description: Sort order
+ *     responses:
+ *       200:
+ *         description: List of all bookings
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   className:
+ *                     type: string
+ *                   trainer:
+ *                     type: string
+ *                   user:
+ *                     type: string
+ *                   userEmail:
+ *                     type: string
+ *                   date:
+ *                     type: string
+ *                     format: date
+ *                   startTime:
+ *                     type: string
+ *                   endTime:
+ *                     type: string
+ *                   location:
+ *                     type: string
+ *                   status:
+ *                     type: string
+ *                   type:
+ *                     type: string
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       500:
+ *         description: Server error
+ */
 
 // Get all bookings (admin only)
 router.get('/admin', [auth, admin], async (req, res) => {

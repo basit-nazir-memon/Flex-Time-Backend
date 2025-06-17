@@ -1,5 +1,10 @@
 const express = require('express')
 const mongoose = require('mongoose')
+const cors = require('cors')
+const passport = require('passport')
+const session = require("express-session")
+const swaggerUi = require('swagger-ui-express')
+const swaggerSpecs = require('./swagger')
 
 const authRoute = require('./routes/auth');
 const classRoutes = require('./routes/classes');
@@ -8,9 +13,6 @@ const bookingRoutes = require('./routes/bookings');
 const paymentRoutes = require('./routes/payments');
 const dashboardRoutes = require('./routes/dashboard');
 const userRoutes = require('./routes/users');
-const session = require("express-session");
-const cors = require('cors');
-const passport = require('passport');
 require('dotenv').config()
 
 const app = express()
@@ -51,6 +53,9 @@ app.use('/dashboard', dashboardRoutes);
 
 app.use('/users', userRoutes);
 
+// Swagger Documentation Route
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+
 app.get('/status', (req, res)=> {
     res.status(200).json({
         status: 'Up',
@@ -58,4 +63,6 @@ app.get('/status', (req, res)=> {
     })
 })
 
-app.listen(process.env.PORT, () => console.log(`App listening on port ${process.env.PORT}!`))
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => console.log(`Server started on port ${PORT}`));

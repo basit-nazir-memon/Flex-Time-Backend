@@ -8,6 +8,84 @@ const cloudinary = require("cloudinary").v2;
 const streamifier = require("streamifier");
 const Class = require('../models/Class');
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     TrainerProfile:
+ *       type: object
+ *       properties:
+ *         fullName:
+ *           type: string
+ *         avatar:
+ *           type: string
+ *         email:
+ *           type: string
+ *         phone:
+ *           type: string
+ *         specialties:
+ *           type: array
+ *           items:
+ *             type: string
+ *         bio:
+ *           type: string
+ *         experience:
+ *           type: string
+ *         certifications:
+ *           type: array
+ *           items:
+ *             type: string
+ *         availability:
+ *           type: object
+ *         documents:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               url:
+ *                 type: string
+ *               uploadedOn:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *         totalReviews:
+ *           type: number
+ *         overallRating:
+ *           type: number
+ *         reviews:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               date:
+ *                 type: string
+ *               rating:
+ *                 type: number
+ *               comment:
+ *                 type: string
+ *     TrainerList:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         name:
+ *           type: string
+ *         email:
+ *           type: string
+ *         specialties:
+ *           type: array
+ *           items:
+ *             type: string
+ *         classes:
+ *           type: number
+ *         active:
+ *           type: boolean
+ */
+
 // Cloudinary configuration
 cloudinary.config({
     cloud_name: process.env.CLOUD_NAME,
@@ -52,7 +130,28 @@ const streamUpload = (req) => {
     });
 };
 
-// GET trainer profile
+/**
+ * @swagger
+ * /api/trainers/me:
+ *   get:
+ *     summary: Get trainer profile
+ *     tags: [Trainers]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Trainer profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TrainerProfile'
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Trainer not found
+ *       500:
+ *         description: Server error
+ */
 router.get('/me', auth, async (req, res) => {
     try {
         const trainer = await Trainer.findOne( {userId: req.user.id})
@@ -107,7 +206,59 @@ router.get('/me', auth, async (req, res) => {
     }
 });
 
-// Update trainer profile
+/**
+ * @swagger
+ * /api/trainers/me:
+ *   put:
+ *     summary: Update trainer profile
+ *     tags: [Trainers]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               avatar:
+ *                 type: string
+ *               bio:
+ *                 type: string
+ *               specialties:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               experience:
+ *                 type: string
+ *               certifications:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               availability:
+ *                 type: object
+ *     responses:
+ *       200:
+ *         description: Trainer profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TrainerProfile'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Not authorized to update this profile
+ *       404:
+ *         description: Trainer not found
+ *       500:
+ *         description: Server error
+ */
 router.put('/me', auth, async (req, res) => {
     try {
         const {
@@ -205,7 +356,58 @@ router.put('/me', auth, async (req, res) => {
     }
 });
 
-// Add document to trainer profile with file upload
+/**
+ * @swagger
+ * /api/trainers/documents:
+ *   post:
+ *     summary: Upload trainer document
+ *     tags: [Trainers]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               document:
+ *                 type: string
+ *                 format: binary
+ *               name:
+ *                 type: string
+ *     responses:
+ *       201:
+ *         description: Document uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 documents:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                       url:
+ *                         type: string
+ *                       uploadedOn:
+ *                         type: string
+ *                       status:
+ *                         type: string
+ *       400:
+ *         description: No document file provided
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Trainer not found
+ *       500:
+ *         description: Server error
+ */
 router.post('/documents', auth, upload.single('document'), async (req, res) => {
     try {
         if (!req.file) {
@@ -257,7 +459,71 @@ router.post('/documents', auth, upload.single('document'), async (req, res) => {
     }
 });
 
-// Optional: Add route to update document status
+/**
+ * @swagger
+ * /api/trainers/{trainerId}/documents/{documentId}:
+ *   patch:
+ *     summary: Update document status
+ *     tags: [Trainers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: trainerId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Trainer ID
+ *       - in: path
+ *         name: documentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Document ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [Valid, Expired]
+ *     responses:
+ *       200:
+ *         description: Document status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 documents:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                       url:
+ *                         type: string
+ *                       uploadedOn:
+ *                         type: string
+ *                       status:
+ *                         type: string
+ *       400:
+ *         description: Invalid status value
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Trainer or document not found
+ *       500:
+ *         description: Server error
+ */
 router.patch('/:trainerId/documents/:documentId', auth, async (req, res) => {
     try {
         const { status } = req.body;
@@ -304,7 +570,28 @@ router.patch('/:trainerId/documents/:documentId', auth, async (req, res) => {
     }
 });
 
-// Get all trainers list
+/**
+ * @swagger
+ * /api/trainers/list:
+ *   get:
+ *     summary: Get all trainers list
+ *     tags: [Trainers]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of trainers
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/TrainerList'
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
 router.get('/list', auth, async (req, res) => {
     try {
         // Get all trainers with their user information

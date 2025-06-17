@@ -7,6 +7,73 @@ const Booking = require('../models/Booking');
 const Package = require('../models/Package');
 const Trainer = require('../models/Trainer');
 
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     DashboardResponse:
+ *       type: object
+ *       properties:
+ *         remainingTime:
+ *           type: string
+ *           description: Formatted remaining time
+ *         percentageRemaining:
+ *           type: number
+ *           description: Percentage of package hours remaining
+ *         timeTagLine:
+ *           type: string
+ *           description: Tagline showing package status
+ *         nextClass:
+ *           type: object
+ *           properties:
+ *             title:
+ *               type: string
+ *             day:
+ *               type: string
+ *             time:
+ *               type: string
+ *             trainer:
+ *               type: string
+ *             location:
+ *               type: string
+ *         upcomingClasses:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *               trainer:
+ *                 type: string
+ *               timeLeft:
+ *                 type: string
+ *               time:
+ *                 type: string
+ *               classDuration:
+ *                 type: string
+ */
+
+/**
+ * @swagger
+ * /api/dashboard/user:
+ *   get:
+ *     summary: Get user dashboard data
+ *     tags: [Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User dashboard data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DashboardResponse'
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
+
 // Helper function to format minutes into hours and minutes
 function formatDuration(minutes) {
     const hours = Math.floor(minutes / 60);
@@ -173,6 +240,54 @@ router.get('/user', auth, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/dashboard/trainer:
+ *   get:
+ *     summary: Get trainer dashboard data
+ *     tags: [Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Trainer dashboard data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 todaysClasses:
+ *                   type: number
+ *                 nextClassIn:
+ *                   type: string
+ *                 totalStudents:
+ *                   type: number
+ *                 lastWeekStudentChange:
+ *                   type: string
+ *                 hoursTaughtThisMonth:
+ *                   type: number
+ *                 upcomingClassesInNext7Days:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       classTitle:
+ *                         type: string
+ *                       classDay:
+ *                         type: string
+ *                       time:
+ *                         type: string
+ *                       location:
+ *                         type: string
+ *                       totalCapacity:
+ *                         type: number
+ *                       bookedCapacity:
+ *                         type: number
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
 router.get('/trainer', auth, async (req, res) => {
     try {
         // First, get trainer details
@@ -310,6 +425,73 @@ router.get('/trainer', auth, async (req, res) => {
     }
 });
 
+/**
+ * @swagger
+ * /api/dashboard/admin:
+ *   get:
+ *     summary: Get admin dashboard data
+ *     tags: [Dashboard]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Admin dashboard data retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 totalUsers:
+ *                   type: number
+ *                 totalTrainers:
+ *                   type: number
+ *                 totalClasses:
+ *                   type: number
+ *                 totalBookings:
+ *                   type: number
+ *                 upcomingClasses:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       title:
+ *                         type: string
+ *                       date:
+ *                         type: string
+ *                       startTime:
+ *                         type: string
+ *                       endTime:
+ *                         type: string
+ *                       location:
+ *                         type: string
+ *                       trainer:
+ *                         type: string
+ *                       enrolledUsers:
+ *                         type: number
+ *                       maxCapacity:
+ *                         type: number
+ *                 recentBookings:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       className:
+ *                         type: string
+ *                       userName:
+ *                         type: string
+ *                       date:
+ *                         type: string
+ *                       status:
+ *                         type: string
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
 router.get('/admin', auth, async (req, res) => {
     try {
         // Get total counts

@@ -4,7 +4,39 @@ const auth = require('../middleware/auth');
 const Class = require('../models/Class');
 const Trainer = require('../models/Trainer');
 
-// Create a new class
+/**
+ * @swagger
+ * /classes:
+ *   post:
+ *     summary: Create a new class
+ *     tags: [Classes]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Class'
+ *     responses:
+ *       201:
+ *         description: Class created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 class:
+ *                   $ref: '#/components/schemas/Class'
+ *       400:
+ *         description: Invalid input data
+ *       404:
+ *         description: Trainer not found
+ *       500:
+ *         description: Server error
+ */
 router.post('/', auth, async (req, res) => {
     try {
         const {
@@ -79,7 +111,24 @@ router.post('/', auth, async (req, res) => {
     }
 });
 
-// Get all classes
+/**
+ * @swagger
+ * /classes:
+ *   get:
+ *     summary: Get all classes
+ *     tags: [Classes]
+ *     responses:
+ *       200:
+ *         description: List of all classes
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/ClassResponse'
+ *       500:
+ *         description: Server error
+ */
 router.get('/', async (req, res) => {
     try {
         const classes = await Class.find()
@@ -125,7 +174,26 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Get all classes
+/**
+ * @swagger
+ * /classes/mine:
+ *   get:
+ *     summary: Get all classes for the authenticated trainer
+ *     tags: [Classes]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of trainer's classes
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/ClassResponse'
+ *       500:
+ *         description: Server error
+ */
 router.get('/mine', auth, async (req, res) => {
     try {
         const classes = await Class.find()
@@ -226,7 +294,31 @@ function formatDuration(minutes) {
     }
 }
 
-// Get single class by ID
+/**
+ * @swagger
+ * /classes/{id}:
+ *   get:
+ *     summary: Get a specific class by ID
+ *     tags: [Classes]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Class ID
+ *     responses:
+ *       200:
+ *         description: Class details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ClassDetailResponse'
+ *       404:
+ *         description: Class not found
+ *       500:
+ *         description: Server error
+ */
 router.get('/:id', async (req, res) => {
     try {
         const classItem = await Class.findById(req.params.id)

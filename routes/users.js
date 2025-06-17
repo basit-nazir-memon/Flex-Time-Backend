@@ -5,7 +5,81 @@ const admin = require('../middleware/admin'); // Assuming you have admin middlew
 const User = require('../models/User');
 const Package = require('../models/Package');
 
-// Get all users (admin only)
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     UserList:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: string
+ *         name:
+ *           type: string
+ *         email:
+ *           type: string
+ *         joinDate:
+ *           type: string
+ *           format: date
+ *         hoursRemaining:
+ *           type: number
+ *         totalPackages:
+ *           type: number
+ *         blocked:
+ *           type: boolean
+ *     UserStatistics:
+ *       type: object
+ *       properties:
+ *         totalUsers:
+ *           type: number
+ *         blockedUsers:
+ *           type: number
+ *         activeUsers:
+ *           type: number
+ */
+
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Get all users (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: Search term for name or email
+ *       - in: query
+ *         name: sort
+ *         schema:
+ *           type: string
+ *           enum: [name, email, createdAt]
+ *         description: Field to sort by
+ *       - in: query
+ *         name: order
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *         description: Sort order
+ *     responses:
+ *       200:
+ *         description: List of users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/UserList'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       500:
+ *         description: Server error
+ */
 router.get('/', [auth, admin], async (req, res) => {
     try {
         // Get query parameters for filtering
@@ -75,8 +149,62 @@ router.get('/', [auth, admin], async (req, res) => {
     }
 });
 
-
-// Update user blocked status
+/**
+ * @swagger
+ * /api/users/block/{userId}:
+ *   patch:
+ *     summary: Update user blocked status (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - blocked
+ *             properties:
+ *               blocked:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: User blocked status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 user:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     email:
+ *                       type: string
+ *                     blocked:
+ *                       type: boolean
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
 router.patch('/block/:userId', [auth, admin], async (req, res) => {
     try {
         const { blocked } = req.body;
@@ -107,8 +235,28 @@ router.patch('/block/:userId', [auth, admin], async (req, res) => {
     }
 });
 
-
-// Get user statistics
+/**
+ * @swagger
+ * /api/users/statistics:
+ *   get:
+ *     summary: Get user statistics (admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User statistics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/UserStatistics'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Forbidden - Admin access required
+ *       500:
+ *         description: Server error
+ */
 router.get('/statistics', [auth, admin], async (req, res) => {
     try {
         const stats = await User.aggregate([

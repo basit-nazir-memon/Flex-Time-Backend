@@ -19,7 +19,38 @@ const PACKAGES = {
     }
 };
 
-// Create payment intent
+/**
+ * @swagger
+ * /payments/create-payment-intent:
+ *   post:
+ *     summary: Create a payment intent for package purchase
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - packageType
+ *             properties:
+ *               packageType:
+ *                 type: string
+ *                 enum: [standard, premium]
+ *     responses:
+ *       200:
+ *         description: Payment intent created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PaymentIntent'
+ *       400:
+ *         description: Invalid package type
+ *       500:
+ *         description: Server error
+ */
 router.post('/create-payment-intent', auth, async (req, res) => {
     try {
         const { packageType } = req.body;
@@ -72,7 +103,26 @@ router.post('/create-payment-intent', auth, async (req, res) => {
     }
 });
 
-// Webhook to handle successful payments
+/**
+ * @swagger
+ * /payments/webhook:
+ *   post:
+ *     summary: Handle Stripe webhook events
+ *     tags: [Payments]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: Webhook processed successfully
+ *       400:
+ *         description: Invalid webhook signature
+ *       500:
+ *         description: Server error
+ */
 router.post('/webhook', express.raw({type: 'application/json'}), async (req, res) => {
     
     const sig = req.headers['stripe-signature'];
@@ -133,8 +183,42 @@ router.post('/webhook', express.raw({type: 'application/json'}), async (req, res
     res.json({received: true});
 });
 
-
-// create a route that uses auth middleware and take the package detailes /payment-success
+/**
+ * @swagger
+ * /payments/payment-success:
+ *   post:
+ *     summary: Handle successful payment
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - payment_intent_id
+ *             properties:
+ *               payment_intent_id:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Payment processed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Payment failed
+ *       500:
+ *         description: Server error
+ */
 router.post('/payment-success', auth, async (req, res) => {
     try {
         const {  payment_intent_id } = req.body;
@@ -167,7 +251,40 @@ router.post('/payment-success', auth, async (req, res) => {
     }
 });
 
-// Get user's package purchase history
+/**
+ * @swagger
+ * /payments/history:
+ *   get:
+ *     summary: Get user's package purchase history
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Package history retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   packageType:
+ *                     type: string
+ *                   amount:
+ *                     type: number
+ *                   status:
+ *                     type: string
+ *                   hours:
+ *                     type: number
+ *                   purchaseDate:
+ *                     type: string
+ *                     format: date-time
+ *       500:
+ *         description: Server error
+ */
 router.get('/history', auth, async (req, res) => {
     try {
         const packages = await Package.find({ userId: req.user.id })
@@ -191,7 +308,27 @@ router.get('/history', auth, async (req, res) => {
     }
 });
 
-// Get user's remaining hours
+/**
+ * @swagger
+ * /payments/remaining-hours:
+ *   get:
+ *     summary: Get user's remaining hours
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Remaining hours retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 remainingHours:
+ *                   type: number
+ *       500:
+ *         description: Server error
+ */
 router.get('/remaining-hours', auth, async (req, res) => {
     try {
         const user = await User.findById(req.user.id)
